@@ -18,6 +18,7 @@ import {
     zerohashes
 } from '../utils';
 import * as assert from 'assert';
+import path from 'path';
 
 
 
@@ -83,16 +84,13 @@ function getHex(someBytes: Buffer): string {
     return `0x${someBytes.toString('hex')}`;
 }
 
-function getBytes(hexstr: any): Buffer {
-    console.log('getBytes received:', hexstr, 'Type:', typeof hexstr);
+function getBytes(hexstr: string): Buffer {
+    // console.log('getBytes received:', hexstr, 'Type:', typeof hexstr);
 
-    if (typeof hexstr !== 'string') {
-        throw new Error('Invalid input: hexstr must be a string');
-    }
-
+  
     if (!hexstr || hexstr.trim() === '') {
-        throw new Error('Invalid input: hexstr is empty or undefined');
-    }
+          return Buffer.alloc(0);
+      }
 
     hexstr = hexstr.replace(/^0x/i, '');
 
@@ -112,43 +110,54 @@ function getBytes(hexstr: any): Buffer {
 function readTestCases(filename: string): DepositTestCase[] {
     const fileContent = fs.readFileSync(filename, 'utf8');
     const testCases = yaml.load(fileContent) as any[];
-    const result: DepositTestCase[] = [];
 
-    testCases.forEach(testCase => {
-        const depositData: DepositData = {
-            pubkey: getBytes(testCase['deposit_data']['pubkey']),
-            withdrawal_credentials: getBytes(testCase['deposit_data']['withdrawal_credentials']),
-            amount: parseInt(testCase['deposit_data']['amount']),
-            signature: getBytes(testCase['deposit_data']['signature'])
-        };
+    if (testCases) {
+        const result: DepositTestCase[] = [];
 
-        const eth1Data: Eth1Data = {
-            deposit_root: getBytes(testCase['eth1_data']['depositRoot']),
-            deposit_count: parseInt(testCase['eth1_data']['depositCount']),
-            block_hash: getBytes(testCase['eth1_data']['block_hash'])
-        };
+        testCases.forEach(testCase => {
+                // console.log('Processing testCase:', testCase);
 
-        const finalized = testCase['snapshot']['finalized'].map((block_hash: string) => getBytes(block_hash));
+                const depositData: DepositData = {
+                    pubkey: getBytes(testCase.deposit_data.pubkey),
+                    withdrawal_credentials: getBytes(testCase.deposit_data.withdrawal_credentials),
+                    amount: parseInt(testCase.deposit_data.amount),
+                    signature: getBytes(testCase.deposit_data.signature)
+                };
 
-        const snapshot = new DepositTreeSnapshot (
-            finalized,
-            getBytes(testCase['snapshot']['depositRoot']),
-            parseInt(testCase['snapshot']['depositCount']),
-            getBytes(testCase['snapshot']['executionBlockHash']),
-            parseInt(testCase['snapshot']['executionBlockHeight'])
-        );
+                const eth1Data: Eth1Data = {
+                    deposit_root: getBytes(testCase.eth1_data.depositRoot),
+                    deposit_count: parseInt(testCase.eth1_data.depositCount),
+                    block_hash: getBytes(testCase.eth1_data.block_hash)
+                };
 
-        result.push({
-            deposit_data: depositData,
-            deposit_data_root: getBytes(testCase['deposit_data_root']),
-            eth1_data: eth1Data,
-            block_height: parseInt(testCase['block_height']),
-            snapshot
+                const finalized = testCase['snapshot']['finalized'].map((block_hash: string) => getBytes(block_hash));
+
+                const snapshot = new DepositTreeSnapshot(
+                    finalized,
+                    getBytes(testCase.snapshot.depositRoot),
+                    parseInt(testCase.snapshot.depositCount),
+                    getBytes(testCase.snapshot.executionBlockHash),
+                    parseInt(testCase.snapshot.executionBlockHeight)
+                );
+
+                result.push({
+                    deposit_data: depositData,
+                    deposit_data_root: getBytes(testCase.deposit_data_root),
+                    eth1_data: eth1Data,
+                    block_height: parseInt(testCase.block_height),
+                    snapshot
+                });
         });
-    });
 
-    return result;
+        return result;
+    } else {
+        console.log("ERROR: No test cases found.");
+        return [];
+    }
 }
+
+   
+
 
 
 
@@ -201,8 +210,9 @@ describe('DepositTree Tests', () => {
     });
 
     it('should pass deposit cases', () => {
+        const filepath = 'C:/Users/Aksha/snap/tests/test.yaml';
         const tree = DepositTree.new();
-        const testCases = readTestCases('test.yaml');
+        const testCases = readTestCases(filepath);
         testCases.forEach(caseItem => {
             tree.pushLeaf(caseItem.deposit_data_root);
             const expectedRoot = caseItem.eth1_data.deposit_root;
@@ -212,8 +222,9 @@ describe('DepositTree Tests', () => {
     });
 
     it('should finalize tree correctly', () => {
+        const filepath = 'C:/Users/Aksha/snap/tests/test.yaml';
         const tree = DepositTree.new();
-        const testCases = readTestCases('test.yaml').slice(0, 128);
+        const testCases = readTestCases(filepath).slice(0, 128);
         testCases.forEach(caseItem => {
             tree.pushLeaf(caseItem.deposit_data_root);
         });
@@ -247,8 +258,9 @@ describe('DepositTree Tests', () => {
     });
 
     it('should match snapshot cases', () => {
+        const filepath = 'C:/Users/Aksha/snap/tests/test.yaml';
         const tree = DepositTree.new();
-        const testCases = readTestCases('test.yaml');
+        const testCases = readTestCases(filepath);
         testCases.forEach(caseItem => {
             tree.pushLeaf(caseItem.deposit_data_root);
         });
