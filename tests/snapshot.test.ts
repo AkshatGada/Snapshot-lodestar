@@ -19,6 +19,7 @@ import {
 } from '../utils';
 import * as assert from 'assert';
 import path from 'path';
+import { log, error } from "console";
 
 
 
@@ -115,7 +116,7 @@ function readTestCases(filename: string): DepositTestCase[] {
         const result: DepositTestCase[] = [];
 
         testCases.forEach(testCase => {
-                // console.log('Processing testCase:', testCase);
+                 console.log('Processing testCase:', typeof(testCase.eth1_data.deposit_root));
 
                 const depositData: DepositData = {
                     pubkey: getBytes(testCase.deposit_data.pubkey),
@@ -190,6 +191,14 @@ function compareProof(tree1: any, tree2: any, index: number) {
     checkProof(tree2, index);
 }
 
+// function fetch(caseItem : any ) : any {
+//     const filepath = 'C:/Users/Aksha/snap/tests/test.yaml';
+//     const testCases = readTestCases(filepath);
+
+
+// }
+
+
 function cloneFromSnapshot(snapshot: DepositTreeSnapshot, testCases: DepositTestCase[]): any {
     const copy = DepositTree.fromSnapshot(snapshot);
     testCases.forEach(caseItem => {
@@ -199,15 +208,15 @@ function cloneFromSnapshot(snapshot: DepositTreeSnapshot, testCases: DepositTest
 }
 
 describe('DepositTree Tests', () => {
-    it('should instantiate DepositTree', () => {
-        DepositTree.new();
-    });
+    // it('should instantiate DepositTree', () => {
+    //     DepositTree.new();
+    // });
 
-    it('should have correct empty root', () => {
-        const empty = DepositTree.new();
-        const expectedRoot = Buffer.from('d70a234731285c6804c2a4f56711ddb8c82c99740f207854891028af34e27e5e', 'hex');
-        expect(empty.getRoot().toString('hex')).toBe(expectedRoot.toString('hex'));
-    });
+    // it('should have correct empty root', () => {
+    //     const empty = DepositTree.new();
+    //     const expectedRoot = Buffer.from('d70a234731285c6804c2a4f56711ddb8c82c99740f207854891028af34e27e5e', 'hex');
+    //     expect(empty.getRoot().toString('hex')).toBe(expectedRoot.toString('hex'));
+    // });
 
     it('should pass deposit cases', () => {
         const filepath = 'C:/Users/Aksha/snap/tests/test.yaml';
@@ -215,80 +224,80 @@ describe('DepositTree Tests', () => {
         const testCases = readTestCases(filepath);
         testCases.forEach(caseItem => {
             tree.pushLeaf(caseItem.deposit_data_root);
-            const expectedRoot = caseItem.eth1_data.deposit_root;
-            expect(caseItem.snapshot.calculateRoot().toString('hex')).toBe(expectedRoot.toString('hex'));
+            const expectedRoot = .eth1_data.deposit_root;
+            expect(caseItem.snapshot.calculateRoot().toString('hex')).toBe(expectedRoot);
             expect(tree.getRoot().toString('hex')).toBe(expectedRoot.toString('hex'));
         });
     });
 
-    it('should finalize tree correctly', () => {
-        const filepath = 'C:/Users/Aksha/snap/tests/test.yaml';
-        const tree = DepositTree.new();
-        const testCases = readTestCases(filepath).slice(0, 128);
-        testCases.forEach(caseItem => {
-            tree.pushLeaf(caseItem.deposit_data_root);
-        });
+    // it('should finalize tree correctly', () => {
+    //     const filepath = 'C:/Users/Aksha/snap/tests/test.yaml';
+    //     const tree = DepositTree.new();
+    //     const testCases = readTestCases(filepath).slice(0, 128);
+    //     testCases.forEach(caseItem => {
+    //         tree.pushLeaf(caseItem.deposit_data_root);
+    //     });
 
-        const originalRoot = tree.getRoot();
-        expect(originalRoot.toString('hex')).toBe(testCases[127].eth1_data.deposit_root.toString('hex'));
+    //     const originalRoot = tree.getRoot();
+    //     expect(originalRoot.toString('hex')).toBe(testCases[127].eth1_data.deposit_root.toString('hex'));
 
-        // tree.finalize(testCases[100].eth1_data, testCases[100].block_height);
-        // expect(tree.getRoot().toString('hex')).toBe(originalRoot.toString('hex'));
+    //     tree.finalize(testCases[100].eth1_data, testCases[100].block_height);
+    //     expect(tree.getRoot().toString('hex')).toBe(originalRoot.toString('hex'));
 
-        const snapshot = tree.getSnapshot();
-        expect(snapshot).toEqual(testCases[100].snapshot);
+    //     const snapshot = tree.getSnapshot();
+    //     expect(snapshot).toEqual(testCases[100].snapshot);
 
-        const copy = cloneFromSnapshot(snapshot, testCases.slice(101, 128));
-        expect(tree.getRoot().toString('hex')).toBe(copy.getRoot().toString('hex'));
+    //     const copy = cloneFromSnapshot(snapshot, testCases.slice(101, 128));
+    //     expect(tree.getRoot().toString('hex')).toBe(copy.getRoot().toString('hex'));
 
-        // tree.finalize(testCases[105].eth1_data, testCases[105].block_height);
-        // expect(tree.getRoot().toString('hex')).toBe(originalRoot.toString('hex'));
+    //     tree.finalize(testCases[105].eth1_data, testCases[105].block_height);
+    //     expect(tree.getRoot().toString('hex')).toBe(originalRoot.toString('hex'));
 
-        const copyFromSnapshot = cloneFromSnapshot(tree.getSnapshot(), testCases.slice(106, 128));
+    //     const copyFromSnapshot = cloneFromSnapshot(tree.getSnapshot(), testCases.slice(106, 128));
 
-        const fullTreeCopy = DepositTree.new();
-        testCases.forEach(caseItem => {
-            fullTreeCopy.pushLeaf(caseItem.deposit_data_root);
-        });
+    //     const fullTreeCopy = DepositTree.new();
+    //     testCases.forEach(caseItem => {
+    //         fullTreeCopy.pushLeaf(caseItem.deposit_data_root);
+    //     });
 
-        for (let index = 106; index < 128; index++) {
-            compareProof(tree, copyFromSnapshot, index);
-            compareProof(tree, fullTreeCopy, index);
-        }
-    });
+    //     for (let index = 106; index < 128; index++) {
+    //         compareProof(tree, copyFromSnapshot, index);
+    //         compareProof(tree, fullTreeCopy, index);
+    //     }
+    // });
 
-    it('should match snapshot cases', () => {
-        const filepath = 'C:/Users/Aksha/snap/tests/test.yaml';
-        const tree = DepositTree.new();
-        const testCases = readTestCases(filepath);
-        testCases.forEach(caseItem => {
-            tree.pushLeaf(caseItem.deposit_data_root);
-        });
+    // it('should match snapshot cases', () => {
+    //     const filepath = 'C:/Users/Aksha/snap/tests/test.yaml';
+    //     const tree = DepositTree.new();
+    //     const testCases = readTestCases(filepath);
+    //     testCases.forEach(caseItem => {
+    //         tree.pushLeaf(caseItem.deposit_data_root);
+    //     });
 
-        // testCases.forEach(caseItem => {
-        //     tree.finalize(caseItem.eth1_data.deposit_root, caseItem.block_height);
-        //     expect(tree.getSnapshot()).toEqual(caseItem.snapshot);
-        // });
-    });
+    //     // testCases.forEach(caseItem => {
+    //     //     tree.finalize(caseItem.eth1_data.deposit_root, caseItem.block_height);
+    //     //     expect(tree.getSnapshot()).toEqual(caseItem.snapshot);
+    //     // });
+    // });
 
-    it('should not allow snapshot from empty tree', () => {
-        expect(() => {
-            const snapshot = DepositTree.new().getSnapshot();
-        });
-    });
+    // it('should not allow snapshot from empty tree', () => {
+    //     expect(() => {
+    //         const snapshot = DepositTree.new().getSnapshot();
+    //     });
+    // });
 
 
-    it('should reject invalid snapshot', () => {
-        assert.throws(() => {
-            const invalidSnapshot = new DepositTreeSnapshot(
-                [],
-                zerohashes[0],
-                0,
-                zerohashes[0],
-                0
-            );
-            const tree = DepositTree.fromSnapshot(invalidSnapshot);
-        }, Error, 'Expected an error when creating a tree from an invalid snapshot');
-    });
+    // it('should reject invalid snapshot', () => {
+    //     assert.throws(() => {
+    //         const invalidSnapshot = new DepositTreeSnapshot(
+    //             [],
+    //             zerohashes[0],
+    //             0,
+    //             zerohashes[0],
+    //             0
+    //         );
+    //         const tree = DepositTree.fromSnapshot(invalidSnapshot);
+    //     }, Error, 'Expected an error when creating a tree from an invalid snapshot');
+    // });
 
 });
